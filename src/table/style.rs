@@ -123,6 +123,12 @@ pub struct Style {
     /// Left and right padding
     pub padding: usize,
 
+    /// Optional left padding override
+    pub left_padding: Option<usize>,
+
+    /// Optional right padding override
+    pub right_padding: Option<usize>,
+
     /// Global indentation
     pub indent: usize,
 
@@ -138,6 +144,8 @@ impl Default for Style {
         Self {
             indent: 0,
             padding: 1,
+            left_padding: None,
+            right_padding: None,
             colseps: ColSeps::default(),
             rowseps: RowSeps::default(),
             header_align: Alignment::Center,
@@ -152,12 +160,10 @@ impl Style {
         if self.colseps.lhs.is_some() {
             write!(wtr, "{}", sep.ljunc)?;
         }
-        let mut iter = widths.iter().peekable();
-        while let Some(width) = iter.next() {
-            for _ in 0..width + self.padding * 2 {
-                write!(wtr, "{}", sep.inner)?;
-            }
-            if self.colseps.mid.is_some() && iter.peek().is_some() {
+        for (i, width) in widths.iter().enumerate() {
+            let count = padded_width(*width, self.left_padding, self.right_padding, self.padding);
+            write_repeated_char(wtr, sep.inner, count)?;
+            if self.colseps.mid.is_some() && i + 1 < widths.len() {
                 write!(wtr, "{}", sep.cjunc)?;
             }
         }
@@ -173,6 +179,32 @@ impl Style {
     }
 }
 
+fn write_repeated_char<W: Write>(wtr: &mut W, ch: char, count: usize) -> Result<()> {
+    const CHUNK_SIZE: usize = 1024;
+
+    let mut remaining = count;
+    let mut chunk = String::new();
+    while remaining > 0 {
+        chunk.clear();
+        let chars = remaining.min(CHUNK_SIZE);
+        for _ in 0..chars {
+            chunk.push(ch);
+        }
+        wtr.write_all(chunk.as_bytes())?;
+        remaining -= chars;
+    }
+    Ok(())
+}
+
+fn padded_width(
+    width: usize,
+    left_padding: Option<usize>,
+    right_padding: Option<usize>,
+    default_padding: usize,
+) -> usize {
+    width + left_padding.unwrap_or(default_padding) + right_padding.unwrap_or(default_padding)
+}
+
 #[derive(Default, Debug, Clone)]
 pub struct StyleBuilder {
     format: Box<Style>,
@@ -185,6 +217,16 @@ impl StyleBuilder {
 
     pub fn padding(mut self, padding: usize) -> Self {
         self.format.padding = padding;
+        self
+    }
+
+    pub fn left_padding(mut self, padding: usize) -> Self {
+        self.format.left_padding = Some(padding);
+        self
+    }
+
+    pub fn right_padding(mut self, padding: usize) -> Self {
+        self.format.right_padding = Some(padding);
         self
     }
 

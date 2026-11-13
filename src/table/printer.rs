@@ -1,7 +1,17 @@
-use super::{row::Row, style::Style};
+use super::{
+    row::Row,
+    style::{RowSep, Style},
+};
 use csv::{Reader, StringRecord};
 use std::io::{self, Result, Write};
 use unicode_width::UnicodeWidthStr;
+
+fn write_optional_row_sep<W: Write>(wtr: &mut W, fmt: &Style, widths: &[usize], sep: Option<RowSep>) -> Result<()> {
+    if let Some(sep) = sep {
+        fmt.write_row_sep(wtr, widths, &sep)?;
+    }
+    Ok(())
+}
 
 pub struct TablePrinter {
     header: Option<StringRecord>,
@@ -20,10 +30,7 @@ impl TablePrinter {
 
     pub(crate) fn writeln<W: Write>(self, wtr: &mut W, fmt: &Style) -> Result<()> {
         let widths = &self.widths;
-        fmt.rowseps
-            .top
-            .map(|sep| fmt.write_row_sep(wtr, widths, &sep))
-            .transpose()?;
+        write_optional_row_sep(wtr, fmt, widths, fmt.rowseps.top)?;
 
         let mut iter = self.records.peekable();
 
@@ -31,10 +38,7 @@ impl TablePrinter {
             let row: Row = self.with_seq.then_some("#").into_iter().chain(header.iter()).collect();
             row.writeln(wtr, fmt, widths, fmt.header_align)?;
             if iter.peek().is_some() {
-                fmt.rowseps
-                    .snd
-                    .map(|sep| fmt.write_row_sep(wtr, widths, &sep))
-                    .transpose()?;
+                write_optional_row_sep(wtr, fmt, widths, fmt.rowseps.snd)?;
             }
         }
 
@@ -51,10 +55,7 @@ impl TablePrinter {
             seq += 1;
         }
 
-        fmt.rowseps
-            .bot
-            .map(|sep| fmt.write_row_sep(wtr, widths, &sep))
-            .transpose()?;
+        write_optional_row_sep(wtr, fmt, widths, fmt.rowseps.bot)?;
 
         wtr.flush()
     }

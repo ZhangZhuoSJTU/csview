@@ -50,6 +50,14 @@ pub struct App {
     #[arg(short, long, default_value_t = 1)]
     pub padding: usize,
 
+    /// Override left padding for table cells.
+    #[arg(long, hide = true)]
+    pub left_padding: Option<usize>,
+
+    /// Override right padding for table cells.
+    #[arg(long, hide = true)]
+    pub right_padding: Option<usize>,
+
     /// Specify global indent for table.
     #[arg(short, long, default_value_t = 0)]
     pub indent: usize,

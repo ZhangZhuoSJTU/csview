@@ -8,6 +8,8 @@ use crate::{
 pub fn table_style(
     style: TableStyle,
     padding: usize,
+    left_padding: Option<usize>,
+    right_padding: Option<usize>,
     indent: usize,
     header_align: Alignment,
     body_align: Alignment,
@@ -55,8 +57,16 @@ pub fn table_style(
             RowSep::new('─', '└', '┴', '┘'),
         ),
     };
+    let builder = builder.padding(padding);
+    let builder = match left_padding {
+        Some(padding) => builder.left_padding(padding),
+        None => builder,
+    };
+    let builder = match right_padding {
+        Some(padding) => builder.right_padding(padding),
+        None => builder,
+    };
     builder
-        .padding(padding)
         .indent(indent)
         .header_align(header_align.into())
         .body_align(body_align.into())
