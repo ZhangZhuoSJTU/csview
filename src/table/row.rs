@@ -20,6 +20,8 @@ impl<'a> FromIterator<&'a str> for Row<'a> {
 impl Row<'_> {
     pub fn write<T: Write>(&self, wtr: &mut T, fmt: &Style, widths: &[usize], align: Alignment) -> Result<()> {
         let sep = fmt.colseps.mid.map(|c| c.to_string()).unwrap_or_default();
+        let left_padding = fmt.left_padding.unwrap_or(fmt.padding);
+        let right_padding = fmt.right_padding.unwrap_or(fmt.padding);
         write!(wtr, "{:indent$}", "", indent = fmt.indent)?;
         fmt.colseps.lhs.map(|sep| fmt.write_col_sep(wtr, sep)).transpose()?;
         Itertools::intersperse(
@@ -27,7 +29,16 @@ impl Row<'_> {
                 .iter()
                 .zip(widths)
                 .map(|(cell, &width)| cell.unicode_pad(width, align, true))
-                .map(|s| format!("{:pad$}{}{:pad$}", "", s, "", pad = fmt.padding)),
+                .map(|s| {
+                    format!(
+                        "{:left_padding$}{}{:right_padding$}",
+                        "",
+                        s,
+                        "",
+                        left_padding = left_padding,
+                        right_padding = right_padding,
+                    )
+                }),
             sep,
         )
         .try_for_each(|s| write!(wtr, "{}", s))?;

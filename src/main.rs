@@ -67,6 +67,8 @@ fn try_main() -> anyhow::Result<()> {
         delimiter,
         style,
         padding,
+        left_padding,
+        right_padding,
         indent,
         sniff,
         header_align,
@@ -97,6 +99,17 @@ fn try_main() -> anyhow::Result<()> {
 
     let sniff = if sniff == 0 { usize::MAX } else { sniff };
     let table = TablePrinter::new(rdr, sniff, number)?;
-    table.writeln(wtr, &table_style(style, padding, indent, header_align, body_align))?;
+    table.writeln(
+        wtr,
+        &table_style(
+            style,
+            padding,
+            left_padding,
+            right_padding,
+            indent,
+            header_align,
+            body_align,
+        ),
+    )?;
     Ok(())
 }
